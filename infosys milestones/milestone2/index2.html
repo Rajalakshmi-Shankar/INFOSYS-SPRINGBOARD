@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatterbox – Milestone 2</title>
+
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, #eef2ff, #f9faff);
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        .chat-container {
+            width: 420px;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        #chat-box {
+            border-radius: 10px;
+            height: 320px;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            background: #f6f8ff;
+        }
+
+        .message {
+            margin: 8px 0;
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.other {
+            background: #ffffff;
+            align-self: flex-start;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        .message.me {
+            background: #e19eea;
+            color: rgb(18, 16, 16);
+            align-self: flex-end;
+        }
+
+        .username {
+            font-weight: bold;
+            display: block;
+            font-size: 12px;
+            margin-bottom: 2px;
+            opacity: 0.8;
+        }
+
+        .system {
+            font-style: italic;
+            color: #6b7280;
+            text-align: center;
+            background: none;
+            box-shadow: none;
+            max-width: 100%;
+        }
+
+        #input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            outline: none;
+        }
+
+        #sendBtn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            background: #8782ec;
+            color: white;
+            font-weight: 500;
+        }
+
+        #sendBtn:hover {
+            background: #6257d7;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="chat-container">
+    <h2>💬 Chatterbox</h2>
+
+    <div id="chat-box"></div>
+
+    <div id="input-row">
+        <input id="messageInput" type="text" placeholder="Type a message...">
+        <button id="sendBtn">Send 🚀</button>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById("chat-box");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    let username = "";
+    while (!username) {
+        username = prompt("Enter your name:");
+        if (username) username = username.trim();
+    }
+
+    const socket = new WebSocket("ws://localhost:8000/ws");
+
+    socket.onopen = () => {
+        socket.send(JSON.stringify({
+            type: "join",
+            username: username
+        }));
+        addSystemMessage("You joined as " + username);
+    };
+
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "chat") {
+            addChatMessage(data.username, data.message);
+        } else if (data.type === "system") {
+            addSystemMessage(data.message);
+        }
+    };
+
+    socket.onclose = () => {
+        addSystemMessage("Connection closed ❌");
+    };
+
+    function addChatMessage(user, msg) {
+        const div = document.createElement("div");
+        div.className = "message " + (user === username ? "me" : "other");
+
+        div.innerHTML = `
+            <span class="username">${user}</span>
+            ${msg}
+        `;
+
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function addSystemMessage(msg) {
+        const div = document.createElement("div");
+        div.className = "message system";
+        div.textContent = msg;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        const text = messageInput.value.trim();
+        if (!text || socket.readyState !== WebSocket.OPEN) return;
+
+        socket.send(JSON.stringify({
+            type: "chat",
+            message: text
+        }));
+
+        messageInput.value = "";
+    }
+
+    sendBtn.onclick = sendMessage;
+
+    messageInput.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatterbox – Milestone 3</title>
+
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f6fb;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .join-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 700px;
+            margin: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        label {
+            font-weight: 500;
+        }
+
+        input, select, button {
+            padding: 8px 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            background: #5b7cfa;
+            color: white;
+            border: none;
+        }
+
+        button:hover {
+            background: #4666e5;
+        }
+
+        .chat-container {
+            max-width: 700px;
+            margin: 15px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+        }
+
+        #chat {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #eef1f8;
+        }
+
+        .message {
+            max-width: 65%;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .my-message {
+            background: #e7c6f8;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .other-message {
+            background: #ffffff;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+
+        .username {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: #555;
+        }
+
+        .system {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+
+        #typing {
+            font-size: 13px;
+            color: #31b167;
+            padding: 5px 15px;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background: #fafafa;
+        }
+
+        .input-area input {
+            flex: 1;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>💬 Chatterbox – Milestone 3</h2>
+
+<div class="join-box">
+    <label>👤 Username:</label>
+    <input id="username" placeholder="Enter your name"><br>
+
+    <label>🏠 Select Room:</label>
+    <select id="room">
+        <option value="general">General</option>
+        <option value="tech">Tech</option>
+        <option value="fun">Fun</option>
+    </select><br>
+
+    <button onclick="joinChat()">🚀 Join Chat</button>
+</div>
+
+<div class="chat-container">
+    <div id="chat"></div>
+    <div id="typing"></div>
+
+    <div class="input-area">
+        <input id="msg" placeholder="Type your message..." disabled>
+        <button id="sendBtn" onclick="sendMessage()" disabled>send</button>
+    </div>
+</div>
+
+<script>
+    let socket = null;
+    let currentUser = "";
+
+    const chat = document.getElementById("chat");
+    const typingDiv = document.getElementById("typing");
+    const msgInput = document.getElementById("msg");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function joinChat() {
+        const username = document.getElementById("username").value;
+        const room = document.getElementById("room").value;
+
+        if (!username) {
+            alert("Please enter username");
+            return;
+        }
+
+        currentUser = username;
+
+        socket = new WebSocket("ws://localhost:8000/ws");
+
+        socket.onopen = () => {
+            socket.send(JSON.stringify({
+                type: "join",
+                username: username,
+                room: room
+            }));
+
+            msgInput.disabled = false;
+            sendBtn.disabled = false;
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.type === "system") {
+                addSystemMessage(data.message);
+            }
+
+            if (data.type === "chat") {
+                addChatMessage(data.username, data.message);
+            }
+
+            if (data.type === "typing") {
+                typingDiv.innerText = `✍️ ${data.username} is typing...`;
+            }
+
+            if (data.type === "stop_typing") {
+                typingDiv.innerText = "";
+            }
+        };
+    }
+
+    function addChatMessage(username, message) {
+        const div = document.createElement("div");
+        div.classList.add("message");
+
+        if (username === currentUser) {
+            div.classList.add("my-message");
+            div.innerText = message;
+        } else {
+            div.classList.add("other-message");
+            div.innerHTML = `<div class="username">${username}</div>${message}`;
+        }
+
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addSystemMessage(message) {
+        const div = document.createElement("div");
+        div.classList.add("system");
+        div.innerText = message;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function sendMessage() {
+        if (msgInput.value.trim() === "") return;
+
+        socket.send(JSON.stringify({
+            type: "chat",
+            message: msgInput.value
+        }));
+
+        msgInput.value = "";
+        socket.send(JSON.stringify({ type: "stop_typing" }));
+    }
+
+    msgInput.addEventListener("input", () => {
+        if (socket) {
+            socket.send(JSON.stringify({ type: "typing" }));
+        }
+    });
+</script>
+
+</body>
+</html>
