@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatterbox - Real-time Chat Application</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="logo">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <h1>Chatterbox</h1>
+                <p>Connect and chat in real-time</p>
+            </div>
+            
+            <div class="login-form">
+                <div class="input-group">
+                    <label for="usernameInput">Your Name</label>
+                    <input 
+                        type="text" 
+                        id="usernameInput" 
+                        placeholder="Enter your name..."
+                        maxlength="20"
+                        autocomplete="off"
+                    >
+                </div>
+                
+                <div class="input-group">
+                    <label for="roomSelect">Choose a Room</label>
+                    <select id="roomSelect">
+                        <option value="general">💬 General Chat</option>
+                        <option value="tech">💻 Tech Talk</option>
+                        <option value="fun">🎮 Fun & Games</option>
+                        <option value="random">🎲 Random</option>
+                    </select>
+                </div>
+                
+                <button id="joinBtn" class="join-btn">
+                    <span>Join Chat</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14m-7-7l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chat Screen -->
+    <div id="chatScreen" class="chat-screen hidden">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="header-left">
+                <div class="room-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <div class="room-info">
+                    <h2 id="currentRoom">General Chat</h2>
+                    <div class="online-status">
+                        <span class="status-dot"></span>
+                        <span id="onlineCount">0 online</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button id="roomSwitchBtn" class="icon-btn" title="Switch Room">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                </button>
+                <button id="leaveBtn" class="icon-btn" title="Leave Chat">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14l5-5-5-5m5 5H9"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Room Switcher Modal -->
+        <div id="roomModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Switch Room</h3>
+                    <button class="close-modal">×</button>
+                </div>
+                <div class="room-list">
+                    <div class="room-item" data-room="general">
+                        <div class="room-emoji">💬</div>
+                        <div class="room-details">
+                            <div class="room-name">General Chat</div>
+                            <div class="room-desc">Casual conversations</div>
+                        </div>
+                    </div>
+                    <div class="room-item" data-room="tech">
+                        <div class="room-emoji">💻</div>
+                        <div class="room-details">
+                            <div class="room-name">Tech Talk</div>
+                            <div class="room-desc">Technology discussions</div>
+                        </div>
+                    </div>
+                    <div class="room-item" data-room="fun">
+                        <div class="room-emoji">🎮</div>
+                        <div class="room-details">
+                            <div class="room-name">Fun & Games</div>
+                            <div class="room-desc">Entertainment zone</div>
+                        </div>
+                    </div>
+                    <div class="room-item" data-room="random">
+                        <div class="room-emoji">🎲</div>
+                        <div class="room-details">
+                            <div class="room-name">Random</div>
+                            <div class="room-desc">Anything goes!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div id="messagesContainer" class="messages-container">
+            <div id="messagesList" class="messages-list">
+                <!-- Messages will be appended here -->
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="typing-indicator hidden">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <span id="typingText"></span>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Type a message..."
+                    autocomplete="off"
+                    maxlength="500"
+                >
+                <button id="sendBtn" class="send-btn" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status hidden">
+            <div class="status-content">
+                <div class="spinner"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
